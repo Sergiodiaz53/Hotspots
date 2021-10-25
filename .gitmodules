@@ -1,0 +1,3 @@
+[submodule "dna2vec"]
+	path = dna2vec
+	url = https://github.com/pnpnpn/dna2vec.git

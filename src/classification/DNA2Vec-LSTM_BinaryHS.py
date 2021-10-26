@@ -14,10 +14,10 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.utils import to_categorical
 
 #SKlearn tools
+from sklearn.utils import shuffle
 from sklearn.utils import class_weight
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix
-from gensim.models import Word2Vec
 from sklearn.model_selection import train_test_split
 
 #Tools
@@ -29,8 +29,8 @@ k = 5
 #Data loading##########################################################
 #######################################################################
 
-hotspots = np.load("Data/hotspots/kmers/hotspots-5k-list.npy")
-labels = np.load("Data/hotspots/kmers/labels_hotspots-5k-list.npy")
+hotspots = np.load("Data/kmers/hotspots-5k-list.npy")
+labels = np.load("Data/kmers/labels_hotspots-5k-list.npy")
 
 #[OPTIONAL] limit number of samples to speed up training
 hotspots, labels = shuffle(hotspots, labels, random_state = 0)
@@ -48,14 +48,14 @@ filepath = 'dna2vec/pretrained/dna2vec-20161219-0153-k3to8-100d-10c-29320Mbp-sli
 mk_model = MultiKModel(filepath)
 mk_model = mk_model.model(k)
 
-pretrained_weights = mk_model.wv.syn0
+pretrained_weights = mk_model.vectors
 vocab_size, embedding_dim = pretrained_weights.shape
 print('Result embedding shape:', pretrained_weights.shape)
 
 def word2idx(word):
   return mk_model.wv.vocab[word].index
 def idx2word(idx):
-  return mk_model.wv.index2word[idx]
+  return mk_model.wv.key_to_index[idx]
 
 #######################################################################
 #SeqTokenizer##########################################################
@@ -70,17 +70,16 @@ for idx, sample in enumerate(hotspots):
             model_token = word2idx(token)
             current_seq.append(model_token)
         except:
-            current_seq.append("-1")
+            current_seq.append("0")
 
     #Padding to fixedsize
     for i in range(len(sample), 1500):
         current_seq.append("0")
 
 
-    current_seq.append(current_seq)
+    hotspots_sequences.append(current_seq)
 
 hotspots = hotspots_sequences
-del hotspots_sequences
 
 #######################################################################
 #Neural Network########################################################
@@ -103,7 +102,7 @@ def createModel(vocab_size, embedding_dim):
 
 def createOptimizer(model):
 
-  optimizer = tf.keras.optimizers.Adam(lr=learning_rate, decay=1e-6)
+  optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, decay=1e-6)
 
   model.compile(loss="binary_crossentropy",
                 optimizer=optimizer,

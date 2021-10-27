@@ -8,10 +8,8 @@ import matplotlib.pyplot as plt
 #Tensorflow & tools
 from tensorflow import keras
 from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, Bidirectional
+from tensorflow.keras.callbacks import TensorBoard
 
 #SKlearn tools
 from sklearn.utils import shuffle
@@ -29,13 +27,13 @@ k = 5
 #Data loading##########################################################
 #######################################################################
 
-hotspots = np.load("Data/kmers/hotspots-5k-list.npy")
-labels = np.load("Data/kmers/labels_hotspots-5k-list.npy")
+hotspots = np.load("Data/kmers/hotspots-5k-list-300chunk.npy")
+labels = np.load("Data/kmers/labels_hotspots-5k-list-300chunk.npy")
 
 #[OPTIONAL] limit number of samples to speed up training
 hotspots, labels = shuffle(hotspots, labels, random_state = 0)
-hotspots = hotspots[0:round((len(hotspots)/5))]
-labels = labels[0:round((len(labels)/5))]
+hotspots = hotspots[0:round((len(hotspots)))]
+labels = labels[0:round((len(labels)))]
 
 print('Hotspots loaded, length:', hotspots.shape)
 print('Labels loaded, shape: ', labels.shape)
@@ -53,9 +51,9 @@ vocab_size, embedding_dim = pretrained_weights.shape
 print('Result embedding shape:', pretrained_weights.shape)
 
 def word2idx(word):
-  return mk_model.wv.vocab[word].index
+    return mk_model.key_to_index[word]
 def idx2word(idx):
-  return mk_model.wv.key_to_index[idx]
+  return mk_model.wv.index_to_key[idx]
 
 #######################################################################
 #SeqTokenizer##########################################################
@@ -66,16 +64,12 @@ hotspots_sequences = []
 for idx, sample in enumerate(hotspots):
     current_seq = []
     for idx2, token in enumerate(sample):
-        try:
-            model_token = word2idx(token)
-            current_seq.append(model_token)
-        except:
-            current_seq.append("0")
-
-    #Padding to fixedsize
-    for i in range(len(sample), 1500):
-        current_seq.append("0")
-
+      token = token.upper()
+      try:
+          model_token = word2idx(token)
+          current_seq.append(model_token)
+      except:
+          current_seq.append("0")
 
     hotspots_sequences.append(current_seq)
 
@@ -86,8 +80,9 @@ hotspots = hotspots_sequences
 #######################################################################
 
 #Hyperparameters
-epochs=50
-learning_rate = 0.01
+epochs=100
+learning_rate = 0.001
+batch_size = 256
 
 #Model Definition
 def createModel(vocab_size, embedding_dim):
@@ -96,8 +91,9 @@ def createModel(vocab_size, embedding_dim):
                       output_dim=embedding_dim,
                       weights=[pretrained_weights]))
   model.add(Dropout(0))
-  model.add(LSTM(embedding_dim))
-  model.add(Dense(2, activation='softmax'))
+  #model.add(LSTM(100, return_sequences=True))
+  model.add(Bidirectional(LSTM(units=16, kernel_initializer="glorot_normal")))
+  model.add(Dense(1, activation='sigmoid'))
   return model
 
 def createOptimizer(model):
@@ -113,22 +109,25 @@ model = createModel(vocab_size, embedding_dim)
 model = createOptimizer(model)
 model.summary()
 
+tensorboard = TensorBoard(
+  log_dir='.\logs',
+  histogram_freq=1,
+  write_images=True
+) 
+
 #######################################################################
 #Training##############################################################
 #######################################################################
 
 hotspots = np.array(hotspots)
-x_train, x_test, y_train, y_test = train_test_split(hotspots, labels, test_size=0.1, shuffle=True)
+x_train, x_test, y_train, y_test = train_test_split(hotspots, labels, test_size=0.2, shuffle=True)
 
 x_train = x_train.astype('float32')
 x_test = x_test.astype('float32')
 
 y_true_max = y_test
 
-y_train = to_categorical(y_train, num_classes=2)
-y_test = to_categorical(y_test, num_classes=2)
-
-history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=epochs, shuffle=True, verbose=2)
+history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=epochs, batch_size=batch_size, shuffle=True, verbose=2, callbacks=[tensorboard])
 
 #######################################################################
 #Results###############################################################

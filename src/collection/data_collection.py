@@ -29,8 +29,8 @@ hotspots = list(SeqIO.parse("Data/fasta/" + "combined-max-1500-padded-REMOVED-BA
 nohotspots = list(SeqIO.parse("Data/fasta/" + "sample-max-1500-padded-REMOVED-BAD.fasta", "fasta"))
 
 
-k=5
-chunk_size = 300
+k=3
+chunk_size=500
 
 print("Generating hotspot list...")
 hotspots_list = getKmersListInChunks(hotspots,k,chunk_size)
@@ -48,5 +48,5 @@ labels = np.concatenate((labels_hotspots, labels_nohotspots), axis=0)
 
 print("Saving dataset...")
 
-np.save("Data/kmers/hotspots-5k-list-"+str(chunk_size)+"chunk",hotspots)
-np.save("Data/kmers/labels_hotspots-5k-list-"+str(chunk_size)+"chunk",labels)
+np.save("Data/kmers/hotspots-3k-list-"+str(chunk_size)+"chunk",hotspots)
+np.save("Data/kmers/labels_hotspots-3k-list-"+str(chunk_size)+"chunk",labels)

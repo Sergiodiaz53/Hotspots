@@ -1,15 +1,10 @@
 #Packages
-import tensorflow as tf
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-#Tensorflow & tools
-from tensorflow import keras
-from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, Bidirectional
-from tensorflow.keras.callbacks import TensorBoard
 
 #SKlearn tools
 from sklearn.utils import shuffle
@@ -20,15 +15,18 @@ from sklearn.model_selection import train_test_split
 
 #Tools
 from dna2vec.multi_k_model import MultiKModel
+from tensorflow.keras.callbacks import TensorBoard
 
-k = 5
+#Local
+from hyperparameters import *
+from models import *
 
 #######################################################################
 #Data loading##########################################################
 #######################################################################
 
-hotspots = np.load("Data/kmers/hotspots-5k-list-300chunk.npy")
-labels = np.load("Data/kmers/labels_hotspots-5k-list-300chunk.npy")
+hotspots = np.load("Data/kmers/hotspots-3k-list-500chunk.npy")
+labels = np.load("Data/kmers/labels_hotspots-3k-list-500chunk.npy")
 
 #[OPTIONAL] limit number of samples to speed up training
 hotspots, labels = shuffle(hotspots, labels, random_state = 0)
@@ -44,7 +42,7 @@ print('Labels loaded, shape: ', labels.shape)
 
 filepath = 'dna2vec/pretrained/dna2vec-20161219-0153-k3to8-100d-10c-29320Mbp-sliding-Xat.w2v'
 mk_model = MultiKModel(filepath)
-mk_model = mk_model.model(k)
+mk_model = mk_model.model(K)
 
 pretrained_weights = mk_model.vectors
 vocab_size, embedding_dim = pretrained_weights.shape
@@ -79,38 +77,16 @@ hotspots = hotspots_sequences
 #Neural Network########################################################
 #######################################################################
 
-#Hyperparameters
-epochs=100
-learning_rate = 0.001
-batch_size = 256
-
-#Model Definition
-def createModel(vocab_size, embedding_dim):
-  model = Sequential()
-  model.add(Embedding(input_dim=vocab_size,
-                      output_dim=embedding_dim,
-                      weights=[pretrained_weights]))
-  model.add(Dropout(0))
-  #model.add(LSTM(100, return_sequences=True))
-  model.add(Bidirectional(LSTM(units=16, kernel_initializer="glorot_normal")))
-  model.add(Dense(1, activation='sigmoid'))
-  return model
-
-def createOptimizer(model):
-
-  optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, decay=1e-6)
-
-  model.compile(loss="binary_crossentropy",
-                optimizer=optimizer,
-                metrics = ['accuracy'])
-  return model
-
-model = createModel(vocab_size, embedding_dim)
-model = createOptimizer(model)
+if(MODEL_SELECTION=='bidirectionalLSTM'):
+  model = createBidirectionalLSTMModel(vocab_size, embedding_dim, pretrained_weights)
+elif(MODEL_SELECTION=='bidirectionalLSTM_with_kmer_frequency_vector'):
+  model = createBidirectionalLSTMModel(vocab_size, embedding_dim, pretrained_weights)
+  
+model = createOptimizer(model, LEARNING_RATE)
 model.summary()
 
 tensorboard = TensorBoard(
-  log_dir='.\logs',
+  log_dir='logs/',
   histogram_freq=1,
   write_images=True
 ) 
@@ -127,7 +103,7 @@ x_test = x_test.astype('float32')
 
 y_true_max = y_test
 
-history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=epochs, batch_size=batch_size, shuffle=True, verbose=2, callbacks=[tensorboard])
+history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard])
 
 #######################################################################
 #Results###############################################################

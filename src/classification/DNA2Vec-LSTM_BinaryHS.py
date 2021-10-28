@@ -79,8 +79,10 @@ hotspots = hotspots_sequences
 
 if(MODEL_SELECTION=='bidirectionalLSTM'):
   model = createBidirectionalLSTMModel(vocab_size, embedding_dim, pretrained_weights)
-elif(MODEL_SELECTION=='bidirectionalLSTM_with_kmer_frequency_vector'):
-  model = createBidirectionalLSTMModel(vocab_size, embedding_dim, pretrained_weights)
+elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual'):
+  model = createBidirectionalLSTMModel_with_residual(vocab_size, embedding_dim, freq_vector_size=512, layers=RESIDUAL_LAYERS, pretrained_weights_for_embedding=pretrained_weights)
+
+keras.utils.plot_model(model, 'multi_input_and_output_model.png', show_shapes=True)
   
 model = createOptimizer(model, LEARNING_RATE)
 model.summary()

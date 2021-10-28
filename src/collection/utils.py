@@ -5,7 +5,6 @@ from Bio import SeqIO
 def getOverlappingKmers(sequence, k=5):
     return [str(sequence[x:x+k]) for x in range(len(sequence) - k + 1)]
 
-
 def getNonOverlappingKmers(sequence, k=5):
     return [str(sequence[x:(x+k)]) for x in range(0, len(sequence)-(len(sequence) % k), k)]
 

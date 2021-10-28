@@ -5,12 +5,18 @@ K = 3
 #Model selection
 MODEL_NAMES = {
     0: 'bidirectionalLSTM',
-    1: 'bidirectionalLSTM_with_kmer_frequency_vector'
+    1: 'bidirectionalLSTM_with_residual'
 }
-MODEL_SELECTION = MODEL_NAMES[0]
+MODEL_SELECTION = MODEL_NAMES[1]
 
 #NN hyperparameters
 EPOCHS=100
 LEARNING_RATE = 0.001
 BATCH_SIZE = 256
+DROPOUT_RATE = 0.2
+RECURRENT_DROPOUT_RATE = 0.2
+HIDDEN_UNITS_LSTM = 16
+RESIDUAL_LAYERS = 1
+RESIDUAL_UNITS = [32,64]
+RESIDUAL_ACTIVATION_TYPE = 'relu'
 

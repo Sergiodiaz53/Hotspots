@@ -124,6 +124,8 @@ if(MODEL_SELECTION=='bidirectionalLSTM'):
   history = model.fit(hs_train, y_train, validation_data=(hs_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr])
 elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual'):
   history = model.fit([hs_train, fv_train], y_train, validation_data=([hs_test,fv_test], y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr])
+elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual_without_batch_normalization'):
+  history = model.fit([hs_train, fv_train], y_train, validation_data=([hs_test,fv_test], y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr])
 elif(MODEL_SELECTION=='basicTestModel'):
   history = model.fit(hs_train, y_train, validation_data=(hs_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr])
 
@@ -131,10 +133,7 @@ elif(MODEL_SELECTION=='basicTestModel'):
 #Results###############################################################
 #######################################################################
 
-
-
-
-y_pred=np.argmax(model.predict(hs_test), axis=-1)
+y_pred=np.argmax(model.predict(([hs_test,fv_test], y_test), axis=-1))
 class_names = ["Hotspot", "No Hotspot"]
 con_mat = tf.math.confusion_matrix(labels=y_true_max, predictions=y_pred).numpy()
 con_mat_norm = np.around(con_mat.astype('float') / con_mat.sum(axis=1)[:, np.newaxis], decimals=2)

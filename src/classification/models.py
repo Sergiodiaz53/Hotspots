@@ -7,6 +7,8 @@ from tensorflow import keras
 from keras import Model, Sequential, regularizers
 from keras.layers import Input, Embedding, LSTM, Dense, Dropout, Bidirectional, BatchNormalization, Activation, Add, concatenate
 
+from .hyperparameters import *
+
 def createModel(vocab_size, embedding_dim, pretrained_weights_for_embedding):
   model = Sequential()
   model.add(Embedding(input_dim=vocab_size,
@@ -132,7 +134,7 @@ def createBidirectionalLSTMModel_with_residual_without_batch_normalization(seq_l
             ri_block = Activation(activation=activation)(ri_block)
             return ri_block
 
-        res_part = regression_identity_block(res_part, RESIDUAL_UNITS[i], RESIDUAL_UNITS[i+1], RESIDUAL_ACTIVATION_TYPE)
+        res_part = regression_identity_block(res_part, RESIDUAL_ACTIVATION_TYPE)
 
     
     output = concatenate([lstm_part, res_part], name = 'merge_parts')

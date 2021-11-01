@@ -3,3 +3,5 @@
         "**/venv": true
     }
 }
+
+"python.analysis.extraPaths": ["${workspaceFolder}/src"]

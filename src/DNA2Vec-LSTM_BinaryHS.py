@@ -15,26 +15,30 @@ from sklearn.model_selection import train_test_split
 
 #Tools
 from dna2vec.multi_k_model import MultiKModel
-from tensorflow.keras.callbacks import TensorBoard
+from keras.callbacks import TensorBoard, ReduceLROnPlateau
 
 #Local
-from hyperparameters import *
-from models import *
+from classification.models import *
+from classification.hyperparameters import *
 
-#######################################################################
+######################################################################
 #Data loading##########################################################
 #######################################################################
-
+#
 hotspots = np.load("Data/kmers/hotspots-3k-list-500chunk.npy")
+freq_vectors = np.load("Data/kmers/freqvectors_hotspots-3k-polys-500chunk.npy")
 labels = np.load("Data/kmers/labels_hotspots-3k-list-500chunk.npy")
 
+print('Hotspots loaded, shape:', hotspots.shape)
+print('Frequency vector and polys loaded, shape:', freq_vectors.shape)
+print('Labels loaded, shape: ', labels.shape)
+
 #[OPTIONAL] limit number of samples to speed up training
-hotspots, labels = shuffle(hotspots, labels, random_state = 0)
+hotspots, freq_vectors, labels = shuffle(hotspots, freq_vectors, labels, random_state = 0)
 hotspots = hotspots[0:round((len(hotspots)))]
+freq_vectors = freq_vectors[0:round((len(freq_vectors)))]
 labels = labels[0:round((len(labels)))]
 
-print('Hotspots loaded, length:', hotspots.shape)
-print('Labels loaded, shape: ', labels.shape)
 
 #######################################################################
 #DNA2Vec###############################################################
@@ -72,25 +76,33 @@ for idx, sample in enumerate(hotspots):
     hotspots_sequences.append(current_seq)
 
 hotspots = hotspots_sequences
+seq_size = len(hotspots[0])
 
 #######################################################################
 #Neural Network########################################################
 #######################################################################
 
 if(MODEL_SELECTION=='bidirectionalLSTM'):
-  model = createBidirectionalLSTMModel(vocab_size, embedding_dim, pretrained_weights)
+  model = createBidirectionalLSTMModel(seq_size, vocab_size, embedding_dim, pretrained_weights)
 elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual'):
-  model = createBidirectionalLSTMModel_with_residual(vocab_size, embedding_dim, freq_vector_size=512, layers=RESIDUAL_LAYERS, pretrained_weights_for_embedding=pretrained_weights)
+  model = createBidirectionalLSTMModel_with_residual(seq_size, vocab_size, embedding_dim, freq_vector_size=len(freq_vectors[0]), layers=RESIDUAL_LAYERS, pretrained_weights_for_embedding=pretrained_weights)
+elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual_without_batch_normalization'):
+  model = createBidirectionalLSTMModel_with_residual_without_batch_normalization(seq_size, vocab_size, embedding_dim, freq_vector_size=len(freq_vectors[0]), layers=RESIDUAL_LAYERS, pretrained_weights_for_embedding=pretrained_weights)
+elif(MODEL_SELECTION=='basicTestModel'):
+  model = createModel(vocab_size, embedding_dim, pretrained_weights)
 
 keras.utils.plot_model(model, 'multi_input_and_output_model.png', show_shapes=True)
   
 model = createOptimizer(model, LEARNING_RATE)
 model.summary()
 
+reduce_lr  = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=15, min_delta=0.001, cooldown=20, min_lr=0.0001)
+
 tensorboard = TensorBoard(
   log_dir='logs/',
   histogram_freq=1,
-  write_images=True
+  write_images=True,
+  write_graph=True
 ) 
 
 #######################################################################
@@ -98,20 +110,31 @@ tensorboard = TensorBoard(
 #######################################################################
 
 hotspots = np.array(hotspots)
-x_train, x_test, y_train, y_test = train_test_split(hotspots, labels, test_size=0.2, shuffle=True)
+hs_train, hs_test, fv_train, fv_test, y_train, y_test = train_test_split(hotspots, freq_vectors, labels, test_size=0.2, shuffle=True)
 
-x_train = x_train.astype('float32')
-x_test = x_test.astype('float32')
+hs_train = hs_train.astype('float32')
+hs_test = hs_test.astype('float32')
+
+fv_train = fv_train.astype('float32')
+fv_test = fv_test.astype('float32')
 
 y_true_max = y_test
 
-history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard])
+if(MODEL_SELECTION=='bidirectionalLSTM'):
+  history = model.fit(hs_train, y_train, validation_data=(hs_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr])
+elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual'):
+  history = model.fit([hs_train, fv_train], y_train, validation_data=([hs_test,fv_test], y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr])
+elif(MODEL_SELECTION=='basicTestModel'):
+  history = model.fit(hs_train, y_train, validation_data=(hs_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr])
 
 #######################################################################
 #Results###############################################################
 #######################################################################
 
-y_pred=np.argmax(model.predict(x_test), axis=-1)
+
+
+
+y_pred=np.argmax(model.predict(hs_test), axis=-1)
 class_names = ["Hotspot", "No Hotspot"]
 con_mat = tf.math.confusion_matrix(labels=y_true_max, predictions=y_pred).numpy()
 con_mat_norm = np.around(con_mat.astype('float') / con_mat.sum(axis=1)[:, np.newaxis], decimals=2)

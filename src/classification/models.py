@@ -7,9 +7,6 @@ from tensorflow import keras
 from keras import Model, Sequential, regularizers
 from keras.layers import Input, Embedding, LSTM, Dense, Dropout, Bidirectional, BatchNormalization, Activation, Add, concatenate
 
-#Local
-from hyperparameters import *
-
 def createModel(vocab_size, embedding_dim, pretrained_weights_for_embedding):
   model = Sequential()
   model.add(Embedding(input_dim=vocab_size,

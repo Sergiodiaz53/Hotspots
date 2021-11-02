@@ -7,8 +7,8 @@ def getOverlappingKmers(sequence, k=5):
 
 def getNonOverlappingKmers(sequence, k=5):
     return [str(sequence[x:(x+k)]) for x in range(0, len(sequence)-(len(sequence) % k), k)]
-
-def getKmersListInChunks(dataset,k,chunk_size):
+        
+def getKmersListInChunks(dataset,k,chunk_size,reverse=False):
     dataset_list = []
     for i, seq_record in enumerate(dataset):
         kmer_list = getNonOverlappingKmers(seq_record.seq, k=k)

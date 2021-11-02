@@ -3,19 +3,15 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from Bio import SeqIO
+from Bio import Seq
 
 #Tools
-from tensorflow.keras import Sequential
-from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
 from sklearn.utils import class_weight
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.utils import to_categorical
 
 #Personal Packages
 from collection.utils  import *
-from hyperparameters import *
+from classification.hyperparameters import *
 
 # Load hotspots
 # Only hotspots of up to length 1,500 bp were taken
@@ -33,7 +29,23 @@ nohotspots = list(SeqIO.parse("Data/fasta/" + "sample-max-1500-padded-REMOVED-BA
 #kmerList##############################################################
 #######################################################################
 
+USE_REVERSE=True
 chunk_size=500
+
+
+if(USE_REVERSE):
+    print("Generating reverse hotspot list...")
+
+    reversed_hotspots = []
+    for i in hotspots:
+        reversed_hotspots.append(i.reverse_complement())
+    hotspots += reversed_hotspots
+
+    reversed_hotspots = []
+    for i in nohotspots:
+        reversed_hotspots.append(i.reverse_complement())
+    nohotspots += reversed_hotspots
+
 
 print("Generating hotspot list...")
 hotspots_list = getKmersListInChunks(hotspots,K,chunk_size)
@@ -57,6 +69,10 @@ print("Labels lenght: ", len(labels))
 
 print("Saving datasets...")
 
-np.save("Data/kmers/hotspots-"+str(K)+"k-list-"+str(chunk_size)+"chunk",hotspots)
-np.save("Data/kmers/freqvectors_hotspots-"+str(K)+"k-polys-"+str(chunk_size)+"chunk",freq_vectors_with_interesting_polys)
-np.save("Data/kmers/labels_hotspots-"+str(K)+"k-list-"+str(chunk_size)+"chunk",labels)
+reversed = ""
+if(USE_REVERSE):
+    reversed = "_with_reversed"
+
+np.save("Data/kmers/hotspots-"+str(K)+"k-list-"+str(chunk_size)+"chunk"+reversed,hotspots)
+np.save("Data/kmers/freqvectors_hotspots-"+str(K)+"k-polys-"+str(chunk_size)+"chunk"+reversed,freq_vectors_with_interesting_polys)
+np.save("Data/kmers/labels_hotspots-"+str(K)+"k-list-"+str(chunk_size)+"chunk"+reversed,labels)

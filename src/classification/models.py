@@ -80,7 +80,7 @@ def createBidirectionalLSTMModel_with_residual(seq_lenght, vocab_size, embedding
             ri_block = Activation(activation=activation)(ri_block)
             return ri_block
 
-        res_part = regression_identity_block(res_part, RESIDUAL_UNITS[i], RESIDUAL_UNITS[i+1], RESIDUAL_ACTIVATION_TYPE)
+        res_part = regression_identity_block(res_part, RESIDUAL_ACTIVATION_TYPE)
 
     
     output = concatenate([lstm_part, res_part], name = 'merge_parts')

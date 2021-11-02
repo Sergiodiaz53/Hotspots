@@ -1,5 +1,5 @@
 #Packages
-
+import sys
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 
 #Tools
 from dna2vec.multi_k_model import MultiKModel
-from keras.callbacks import TensorBoard, ReduceLROnPlateau
+from keras.callbacks import TensorBoard, ReduceLROnPlateau, EarlyStopping
 
 #Local
 from classification.models import *
@@ -24,10 +24,18 @@ from classification.hyperparameters import *
 ######################################################################
 #Data loading##########################################################
 #######################################################################
-#
-hotspots = np.load("Data/kmers/hotspots-3k-list-500chunk.npy")
-freq_vectors = np.load("Data/kmers/freqvectors_hotspots-3k-polys-500chunk.npy")
-labels = np.load("Data/kmers/labels_hotspots-3k-list-500chunk.npy")
+
+
+try:
+  run_dir = str(sys.argv[1])
+  root_dir = "../"
+except:
+  run_dir = ""
+  root_dir = ""
+
+hotspots = np.load(root_dir+"Data/kmers/hotspots-3k-list-500chunk_with_reversed.npy")
+freq_vectors = np.load(root_dir+"Data/kmers/freqvectors_hotspots-3k-polys-500chunk_with_reversed.npy")
+labels = np.load(root_dir+"Data/kmers/labels_hotspots-3k-list-500chunk_with_reversed.npy")
 
 print('Hotspots loaded, shape:', hotspots.shape)
 print('Frequency vector and polys loaded, shape:', freq_vectors.shape)
@@ -44,7 +52,7 @@ labels = labels[0:round((len(labels)))]
 #DNA2Vec###############################################################
 #######################################################################
 
-filepath = 'dna2vec/pretrained/dna2vec-20161219-0153-k3to8-100d-10c-29320Mbp-sliding-Xat.w2v'
+filepath = root_dir+'dna2vec/pretrained/dna2vec-20161219-0153-k3to8-100d-10c-29320Mbp-sliding-Xat.w2v'
 mk_model = MultiKModel(filepath)
 mk_model = mk_model.model(K)
 
@@ -91,19 +99,18 @@ elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual_without_batch_normalizati
 elif(MODEL_SELECTION=='basicTestModel'):
   model = createModel(vocab_size, embedding_dim, pretrained_weights)
 
-keras.utils.plot_model(model, 'multi_input_and_output_model.png', show_shapes=True)
+keras.utils.plot_model(model, run_dir+'multi_input_and_output_model.png', show_shapes=True)
   
 model = createOptimizer(model, LEARNING_RATE)
 model.summary()
 
+#Define Callbacks
+
 reduce_lr  = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=15, min_delta=0.001, cooldown=20, min_lr=0.0001)
 
-tensorboard = TensorBoard(
-  log_dir='logs/',
-  histogram_freq=1,
-  write_images=True,
-  write_graph=True
-) 
+tensorboard = TensorBoard(log_dir= run_dir+'logs/', histogram_freq=1, write_images=True, write_graph=True) 
+
+early_stopping = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=60, restore_best_weights=True)
 
 #######################################################################
 #Training##############################################################
@@ -121,19 +128,19 @@ fv_test = fv_test.astype('float32')
 y_true_max = y_test
 
 if(MODEL_SELECTION=='bidirectionalLSTM'):
-  history = model.fit(hs_train, y_train, validation_data=(hs_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr])
+  history = model.fit(hs_train, y_train, validation_data=(hs_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr, early_stopping])
 elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual'):
-  history = model.fit([hs_train, fv_train], y_train, validation_data=([hs_test,fv_test], y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr])
+  history = model.fit([hs_train, fv_train], y_train, validation_data=([hs_test,fv_test], y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr, early_stopping])
 elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual_without_batch_normalization'):
-  history = model.fit([hs_train, fv_train], y_train, validation_data=([hs_test,fv_test], y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr])
+  history = model.fit([hs_train, fv_train], y_train, validation_data=([hs_test,fv_test], y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr, early_stopping])
 elif(MODEL_SELECTION=='basicTestModel'):
-  history = model.fit(hs_train, y_train, validation_data=(hs_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr])
+  history = model.fit(hs_train, y_train, validation_data=(hs_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr, early_stopping])
 
 #######################################################################
 #Results###############################################################
 #######################################################################
 
-y_pred=np.argmax(model.predict(([hs_test,fv_test], y_test), axis=-1))
+y_pred=np.argmax(model.predict([hs_test,fv_test]), axis=-1)
 class_names = ["Hotspot", "No Hotspot"]
 con_mat = tf.math.confusion_matrix(labels=y_true_max, predictions=y_pred).numpy()
 con_mat_norm = np.around(con_mat.astype('float') / con_mat.sum(axis=1)[:, np.newaxis], decimals=2)
@@ -145,4 +152,6 @@ sns.heatmap(con_mat_df, annot=True,cmap=plt.cm.Blues)
 plt.tight_layout()
 plt.ylabel('True label')
 plt.xlabel('Predicted label')
-plt.savefig('confussion_matrix.png')
+plt.savefig(run_dir+'confussion_matrix.png')
+
+model.save(run_dir+'model.h5')

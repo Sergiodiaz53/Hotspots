@@ -12,9 +12,10 @@ MODEL_NAMES = {
     0: 'basicTestModel',
     1: 'bidirectionalLSTM',
     2: 'bidirectionalLSTM_with_residual',
-    3: 'bidirectionalLSTM_with_residual_without_batch_normalization'
+    3: 'bidirectionalLSTM_with_residual_without_batch_normalization',
+    4: 'Pretrained_bidirectionalLSTM_with_residual_without_batch_normalization'
 }
-MODEL_SELECTION = MODEL_NAMES[3]
+MODEL_SELECTION = MODEL_NAMES[1]
 
 # NN hyperparameters
 EPOCHS = 300

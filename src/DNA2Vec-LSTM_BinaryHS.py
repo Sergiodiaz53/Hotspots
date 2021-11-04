@@ -5,7 +5,6 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-
 #SKlearn tools
 from sklearn.utils import shuffle
 from sklearn.utils import class_weight
@@ -33,9 +32,9 @@ except:
   run_dir = ""
   root_dir = ""
 
-hotspots = np.load(root_dir+"Data/kmers/hotspots-3k-list-500chunk_with_reversed.npy")
-freq_vectors = np.load(root_dir+"Data/kmers/freqvectors_hotspots-3k-polys-500chunk_with_reversed.npy")
-labels = np.load(root_dir+"Data/kmers/labels_hotspots-3k-list-500chunk_with_reversed.npy")
+hotspots = np.load(root_dir+"Data/kmers/hotspots-3k-list-500chunk.npy")
+freq_vectors = np.load(root_dir+"Data/kmers/freqvectors_hotspots-3k-polys-500chunk.npy")
+labels = np.load(root_dir+"Data/kmers/labels_hotspots-3k-list-500chunk.npy")
 
 print('Hotspots loaded, shape:', hotspots.shape)
 print('Frequency vector and polys loaded, shape:', freq_vectors.shape)
@@ -91,11 +90,15 @@ seq_size = len(hotspots[0])
 #######################################################################
 
 if(MODEL_SELECTION=='bidirectionalLSTM'):
-  model = createBidirectionalLSTMModel(seq_size, vocab_size, embedding_dim, pretrained_weights)
+  model, _, _ = createBidirectionalLSTMModel(seq_size, vocab_size, embedding_dim, pretrained_weights)
 elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual'):
   model = createBidirectionalLSTMModel_with_residual(seq_size, vocab_size, embedding_dim, freq_vector_size=len(freq_vectors[0]), layers=RESIDUAL_LAYERS, pretrained_weights_for_embedding=pretrained_weights)
 elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual_without_batch_normalization'):
   model = createBidirectionalLSTMModel_with_residual_without_batch_normalization(seq_size, vocab_size, embedding_dim, freq_vector_size=len(freq_vectors[0]), layers=RESIDUAL_LAYERS, pretrained_weights_for_embedding=pretrained_weights)
+elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual_without_batch_normalization'):
+  model = createBidirectionalLSTMModel_with_residual_without_batch_normalization(seq_size, vocab_size, embedding_dim, freq_vector_size=len(freq_vectors[0]), layers=RESIDUAL_LAYERS, pretrained_weights_for_embedding=pretrained_weights)
+elif(MODEL_SELECTION=='Pretrained_bidirectionalLSTM_with_residual_without_batch_normalization'):
+  model = createPreTrainedResLSTMModel_with_residual(seq_size, vocab_size, embedding_dim, layers=RESIDUAL_LAYERS, freq_vector_size=len(freq_vectors[0]), pretrained_weights_for_embedding=pretrained_weights, root_dir=root_dir)
 elif(MODEL_SELECTION=='basicTestModel'):
   model = createModel(vocab_size, embedding_dim, pretrained_weights)
 
@@ -125,8 +128,6 @@ hs_test = hs_test.astype('float32')
 fv_train = fv_train.astype('float32')
 fv_test = fv_test.astype('float32')
 
-y_true_max = y_test
-
 if(MODEL_SELECTION=='bidirectionalLSTM'):
   history = model.fit(hs_train, y_train, validation_data=(hs_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr, early_stopping])
 elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual'):
@@ -140,13 +141,13 @@ elif(MODEL_SELECTION=='basicTestModel'):
 #Results###############################################################
 #######################################################################
 
-y_pred=np.argmax(model.predict([hs_test,fv_test]), axis=-1)
+y_pred=model.predict(hs_test)
 class_names = ["Hotspot", "No Hotspot"]
-con_mat = tf.math.confusion_matrix(labels=y_true_max, predictions=y_pred).numpy()
+con_mat = tf.math.confusion_matrix(labels=y_test, predictions=y_pred).numpy()
 con_mat_norm = np.around(con_mat.astype('float') / con_mat.sum(axis=1)[:, np.newaxis], decimals=2)
 con_mat_df = pd.DataFrame(con_mat_norm, index = class_names, columns = class_names)
 
-print('Accuracy Y_test: ', accuracy_score(y_true_max, y_pred))
+print('Accuracy Y_test: ', accuracy_score(y_test, y_pred))
 figure = plt.figure(figsize=(8, 8))
 sns.heatmap(con_mat_df, annot=True,cmap=plt.cm.Blues)
 plt.tight_layout()

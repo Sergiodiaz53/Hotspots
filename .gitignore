@@ -3,3 +3,4 @@
 /venv
 /logs
 src/test.py
+/pretrained_models

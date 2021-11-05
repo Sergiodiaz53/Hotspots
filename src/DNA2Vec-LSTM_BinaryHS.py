@@ -109,17 +109,18 @@ model.summary()
 
 #Define Callbacks
 
-reduce_lr  = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=15, min_delta=0.001, cooldown=20, min_lr=0.0001)
+reduce_lr  = ReduceLROnPlateau(monitor='val_loss', factor=0.7, patience=25, min_delta=0.001, cooldown=25, min_lr=0.0001)
 
 tensorboard = TensorBoard(log_dir= run_dir+'logs/', histogram_freq=1, write_images=True, write_graph=True) 
 
-early_stopping = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=60, restore_best_weights=True)
+early_stopping = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=50, restore_best_weights=True)
 
 #######################################################################
 #Training##############################################################
 #######################################################################
 
 hotspots = np.array(hotspots)
+labels = np.array(labels)
 hs_train, hs_test, fv_train, fv_test, y_train, y_test = train_test_split(hotspots, freq_vectors, labels, test_size=0.2, shuffle=True)
 
 hs_train = hs_train.astype('float32')
@@ -141,7 +142,7 @@ elif(MODEL_SELECTION=='basicTestModel'):
 #Results###############################################################
 #######################################################################
 
-y_pred=model.predict(hs_test)
+"""y_pred=model.predict(hs_test)
 class_names = ["Hotspot", "No Hotspot"]
 con_mat = tf.math.confusion_matrix(labels=y_test, predictions=y_pred).numpy()
 con_mat_norm = np.around(con_mat.astype('float') / con_mat.sum(axis=1)[:, np.newaxis], decimals=2)
@@ -153,6 +154,6 @@ sns.heatmap(con_mat_df, annot=True,cmap=plt.cm.Blues)
 plt.tight_layout()
 plt.ylabel('True label')
 plt.xlabel('Predicted label')
-plt.savefig(run_dir+'confussion_matrix.png')
+plt.savefig(run_dir+'confussion_matrix.png')"""
 
 model.save(run_dir+'model.h5')

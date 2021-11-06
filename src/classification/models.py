@@ -198,7 +198,7 @@ def createPreTrainedResLSTMModel_with_residual(seq_lenght, vocab_size, embedding
 
     #Load pretrained LSTM
     lstmnet, lstm_inputs, lstm_outputs = createBidirectionalLSTMModel(seq_lenght, vocab_size, embedding_dim, pretrained_weights_for_embedding)
-    pretrained_lstmnet = keras.models.load_model(root_dir+'pretrained_models/LSTMNetmodel.h5')
+    pretrained_lstmnet = keras.models.load_model(root_dir+'pretrained_models/LSTM_model.h5')
     lstmnet.set_weights(pretrained_lstmnet.get_weights())
     for layer in lstmnet.layers:
         layer.trainable = False
@@ -211,7 +211,9 @@ def createPreTrainedResLSTMModel_with_residual(seq_lenght, vocab_size, embedding
 
     output = Dense(1, activation='sigmoid')(output)
 
-    model = Model(inputs=[res_inputs, lstm_inputs], outputs=output)
+    model = Model(inputs=[lstm_inputs, res_inputs], outputs=output)
+
+    return model
 
 def createOptimizer(model, learning_rate):
 

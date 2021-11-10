@@ -2,7 +2,7 @@
 #Data options
 K = 3
 K_FV = 5
-USE_REVERSE=True
+USE_REVERSE=False
 CHUNK_SIZE=500
 LIMIT_TRAINING_SIZE = 0
 VOCAB_SIZE = 4**K
@@ -21,11 +21,11 @@ MODEL_NAMES = {
     3: 'bidirectionalLSTM_with_residual_without_batch_normalization',
     4: 'Pretrained_bidirectionalLSTM_with_residual_without_batch_normalization'
 }
-MODEL_SELECTION = MODEL_NAMES[1]
+MODEL_SELECTION = MODEL_NAMES[4]
 
 # NN hyperparameters
-EPOCHS = 500
-LEARNING_RATE = 0.01
+EPOCHS = 50
+LEARNING_RATE = 0.001
 BATCH_SIZE = 256
 DROPOUT_RATE = 0.3
 

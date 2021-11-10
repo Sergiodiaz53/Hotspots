@@ -190,7 +190,7 @@ def createPreTrainedResLSTMModel_with_residual(seq_lenght, vocab_size, embedding
 
     #Load pretrained ResNet
     resnet, res_inputs, res_outputs = createResNetModel(freq_vector_size=542, layers = RESIDUAL_LAYERS)
-    pretrained_resnet = keras.models.load_model(root_dir+'pretrained_models/ResNetmodel.h5')
+    pretrained_resnet = keras.models.load_model(root_dir+'pretrained_models/ResNetmodel-2kEpochs-64.h5')
     resnet.set_weights(pretrained_resnet.get_weights())
     for layer in resnet.layers:
         layer.trainable = False
@@ -198,7 +198,7 @@ def createPreTrainedResLSTMModel_with_residual(seq_lenght, vocab_size, embedding
 
     #Load pretrained LSTM
     lstmnet, lstm_inputs, lstm_outputs = createBidirectionalLSTMModel(seq_lenght, vocab_size, embedding_dim, pretrained_weights_for_embedding)
-    pretrained_lstmnet = keras.models.load_model(root_dir+'pretrained_models/LSTM_model.h5')
+    pretrained_lstmnet = keras.models.load_model(root_dir+'pretrained_models/LSTM_model-69.h5')
     lstmnet.set_weights(pretrained_lstmnet.get_weights())
     for layer in lstmnet.layers:
         layer.trainable = False
@@ -206,7 +206,13 @@ def createPreTrainedResLSTMModel_with_residual(seq_lenght, vocab_size, embedding
 
     output = concatenate([res_outputs,lstm_outputs], name = 'merge_parts')
 
-    output = Dense(units = 4, kernel_initializer=initializer, use_bias=True, bias_initializer='zeros')(output)
+    output = Dense(units = 64, kernel_initializer=initializer, use_bias=True, bias_initializer='zeros')(output)
+    output = Activation(activation='relu')(output)
+
+    output = Dense(units = 32, kernel_initializer=initializer, use_bias=True, bias_initializer='zeros')(output)
+    output = Activation(activation='relu')(output)
+
+    output = Dense(units = 16, kernel_initializer=initializer, use_bias=True, bias_initializer='zeros')(output)
     output = Activation(activation='relu')(output)
 
     output = Dense(1, activation='sigmoid')(output)

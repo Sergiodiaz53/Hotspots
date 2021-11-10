@@ -82,7 +82,7 @@ def idx2word(idx):
 #######################################################################
 
 #Define Callbacks
-reduce_lr  = ReduceLROnPlateau(monitor='val_loss', factor=0.7, patience=25, min_delta=0.001, cooldown=25, min_lr=0.0001)
+reduce_lr  = ReduceLROnPlateau(monitor='val_loss', factor=0.9, patience=100, min_delta=0.001, cooldown=50, min_lr=0.0001)
 tensorboard = TensorBoard(log_dir= run_dir+'logs/', histogram_freq=1, write_images=True, write_graph=True) 
 early_stopping = EarlyStopping(monitor='val_loss', mode='min', verbose=1, patience=100, restore_best_weights=True)
 model_checkpoint = ModelCheckpoint(filepath=run_dir+"checkpoint", save_weights_only=True, monitor='val_accuracy', mode='max', save_best_only=True, verbose=1)
@@ -113,13 +113,13 @@ model.summary()
 #TODO: Create list with inputs and validations to avoid IFs
 
 if(MODEL_SELECTION=='bidirectionalLSTM'):
-  history = model.fit(hs_train, y_train, validation_data=(hs_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr, early_stopping, model_checkpoint])
+  history = model.fit(hs_train, y_train, validation_data=(hs_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr, model_checkpoint])
 elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual'):
   history = model.fit([hs_train, fv_train], y_train, validation_data=([hs_test,fv_test], y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr, early_stopping, model_checkpoint])
 elif(MODEL_SELECTION=='bidirectionalLSTM_with_residual_without_batch_normalization'):
   history = model.fit([hs_train, fv_train], y_train, validation_data=([hs_test,fv_test], y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr, early_stopping, model_checkpoint])
 elif(MODEL_SELECTION=='Pretrained_bidirectionalLSTM_with_residual_without_batch_normalization'):
-  history = model.fit([hs_train, fv_train], y_train, validation_data=([hs_test,fv_test], y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr, early_stopping, model_checkpoint])
+  history = model.fit([hs_train, fv_train], y_train, validation_data=([hs_test,fv_test], y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr, model_checkpoint])
 elif(MODEL_SELECTION=='basicTestModel'):
   history = model.fit(hs_train, y_train, validation_data=(hs_test, y_test), epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, verbose=2, callbacks=[tensorboard, reduce_lr, early_stopping, model_checkpoint])
 

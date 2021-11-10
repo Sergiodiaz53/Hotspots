@@ -47,9 +47,9 @@ class callback(CallbackAny2Vec):
         print('Loss after epoch {}: {}'.format(self.epoch, loss_now))
         self.epoch += 1
 
-word_model = Word2Vec(hotspots, vector_size=100, epochs=20, compute_loss=True, callbacks=[callback()])
+word_model = Word2Vec(hotspots, vector_size=100, epochs=10, compute_loss=True, callbacks=[callback()])
 
-pretrained_weights = word_model.wv.syn0
+pretrained_weights = word_model.wv.vectors 
 vocab_size, embedding_dim = pretrained_weights.shape
 
 word_model.save("kmer2vec.model")

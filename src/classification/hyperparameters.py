@@ -21,13 +21,13 @@ MODEL_NAMES = {
     3: 'bidirectionalLSTM_with_residual_without_batch_normalization',
     4: 'Pretrained_bidirectionalLSTM_with_residual_without_batch_normalization'
 }
-MODEL_SELECTION = MODEL_NAMES[4]
+MODEL_SELECTION = MODEL_NAMES[1]
 
 # NN hyperparameters
-EPOCHS = 50
-LEARNING_RATE = 0.001
-BATCH_SIZE = 256
-DROPOUT_RATE = 0.3
+EPOCHS = 300
+LEARNING_RATE = 0.01
+BATCH_SIZE = 64
+DROPOUT_RATE = 0.2
 
 # LSTM
 HIDDEN_UNITS_LSTM = 8

@@ -1,9 +1,11 @@
 #Packages
 import sys
+import gensim
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+
 
 #SKlearn tools
 from sklearn.metrics import accuracy_score
@@ -62,20 +64,19 @@ fv_test = fv_test.astype('float32')
 seq_size = len(hs_train[0])
 
 #######################################################################
-#DNA2Vec###############################################################
+#Kmer2Vec##############################################################
 #######################################################################
 
-filepath = root_dir+'dna2vec/pretrained/dna2vec-20161219-0153-k3to8-100d-10c-29320Mbp-sliding-Xat.w2v'
-mk_model = MultiKModel(filepath)
-mk_model = mk_model.model(K)
+filepath = root_dir+'pretrained_models/kmer2vec.model'
+kmer2vec_model = gensim.models.Word2Vec.load(filepath)
 
-pretrained_weights = mk_model.vectors
+pretrained_weights = kmer2vec_model.wv.vectors 
 vocab_size, embedding_dim = pretrained_weights.shape
 
 def word2idx(word):
-    return mk_model.key_to_index[word]
+    return kmer2vec_model.key_to_index[word]
 def idx2word(idx):
-  return mk_model.wv.index_to_key[idx]
+  return kmer2vec_model.wv.index_to_key[idx]
 
 #######################################################################
 #Neural Network########################################################
